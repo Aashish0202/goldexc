@@ -1,0 +1,15 @@
+{
+  "background_color": "#40189d",
+  "description": "GrowFire : Grow The World",
+  "display": "fullscreen",
+  "icons": [
+    {
+      "src": "new_theme/assets/images/pwa.png",
+      "sizes": "200x200",
+      "type": "image/png"
+    }
+  ],
+  "name": "Grow Fire",
+  "short_name": "GrowFire",
+  "start_url": "/"
+}

@@ -1,0 +1,337 @@
+@include('user4.common.header')
+
+
+@include('user4.common.sidebar')
+ 
+<!-- Main Content -->
+      <div class="page-wrapper">
+        <div class="container-fluid">
+          
+          <!-- Title -->
+          <div class="row heading-bg">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+              <h5 class="txt-dark">Activation</h5>
+            </div>
+          
+            <!-- Breadcrumb -->
+            <div class="col-lg-9 col-sm-8 col-md-8 col-xs-12">
+              <ol class="breadcrumb">
+                <li><a href="{{url('/')}}/user/dashboard">Dashboard</a></li>
+                
+                <li class="active"><span>Make Deposite</span></li>
+              </ol>
+            </div>
+            <!-- /Breadcrumb -->
+          
+          </div>
+          <!-- /Title -->
+
+           <?php
+          $data_setting = DB::table('setting')->first();
+          // print_r($data_setting); die();     
+           ?>
+      <?php
+          $data = DB::table('deposite_option')->first();
+      ?>
+          
+         
+          
+          <!-- Row -->
+          <div class="row">
+            
+            <div class="col-md-6">
+              <div class="panel panel-default card-view">
+                <div class="panel-heading">
+                  <div class="pull-left">
+                    <h6 class="panel-title txt-dark">Make Deposite</h6>
+                  </div>
+                  <div class="clearfix"></div>
+                </div>
+
+
+                  @if(count($errors)>0)
+
+                    <div class="alert alert-danger">
+
+                      <button class="close" type="button" data-dismiss="alert">x</button>
+                      <ul>
+                          @foreach($errors->all() as $error)
+
+                            <li>{{ $error }}</li>
+                          
+                          @endforeach
+                      </ul>
+                    </div>
+                  @endif
+              @include('user4.common.operation_status')
+                <div class="panel-wrapper collapse in">
+                  <div class="panel-body">
+                    <div class="row">
+                      <div class="col-sm-12 col-xs-12">
+                        <div class="form-wrap">
+                          <form class="form-horizontal" action="{{url('/')}}/user/make_deposite_post" method="post" onsubmit="return checkall()">
+
+                             @csrf
+
+                            <div class="form-group">
+                              <label for="exampleInputuname_4" class="col-sm-3 control-label">Amount</label>
+                              <div class="col-sm-9">
+                                <div class="input-group">
+                                  <input type="text" class="form-control" name="amount" id="amount" placeholder="Enter Amount " onchange="return checkamount()">
+                                  <div class="input-group-addon"><i class="fa fa-inr" aria-hidden="true"></i></div>
+                                </div>
+                                <div id="amount_err" class="text-danger"></div>
+                              </div>
+                            </div>
+
+                            <?php
+                              //set withdraw timimg
+                              date_default_timezone_set("Asia/Kolkata");
+                              $current_time = date("H:i");
+
+                              $begin = $data_setting->deposite_timing_from;
+                              $end   = $data_setting->deposite_timing_to;
+
+                              $date1 = DateTime::createFromFormat('G', $current_time);
+                              $date2 = DateTime::createFromFormat('G', $begin);
+                              $date3 = DateTime::createFromFormat('G', $end);                                                      
+        
+                           ?>
+
+
+                            <div class="form-group">
+                              <label for="exampleInputEmail_4" class="col-sm-3 control-label"></label>
+                              <div class="col-sm-9">
+                                <div class="input-group">
+                                <?php $deposit_option = DB::table('deposite_option')->where('is_active','=','yes')->get(); ?>
+                                  @foreach($deposit_option as $options)
+                                           
+                                <input type="radio"  id="radio13" name="field" value="{{$options->symbol}}" id="{{$options->symbol}}" onclick='check_value(this)'>   {{$options->symbol}} <br/> 
+                                         
+                                  @endforeach
+                                  <img class="img-fluid" id='imagedest' style="height:150px;" "width:150px;" "align-items: : center;">
+                                 <div id="address" class="text-black text-center"  ></div> 
+                                
+                                </div>
+                              </div>
+                            </div>
+
+
+
+                            <div class="form-group">
+                              <label for="exampleInputweb_41" class="col-sm-3 control-label">Amount (Coin)</label>
+                              <div class="col-sm-9">
+                                <div class="input-group">
+                                  <input type="text" class="form-control" name="amount_in_coin" id="amount_in_coin" placeholder="Enter Amount (INR)" readonly>
+                                  <div class="input-group-addon"><i class="fa fa-exchange" aria-hidden="true"></i></div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputpwd_5" class="col-sm-3 control-label">Transaction Number </label>
+                              <div class="col-sm-9">
+                                <div class="input-group">
+                                  <input type="text" class="form-control"  name="utr" id="utr" placeholder="Enter New Transaction Number">
+                                  <div class="input-group-addon"><i class="icon-lock"></i></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                           
+                            <div class="form-group mb-0">
+                              <div class="col-sm-offset-3 col-sm-9">
+
+                                 @if($date1 >= $date2 && $date1 <= $date3)
+
+                                <button type="submit" class="btn btn-info ">Deposite</button>  
+
+                           @else                      
+                                <hr>
+                                <div class="form-group col-md-12">
+                                <h3 class="text-danger  animate__animated  animate__flash 2s text-center" > Payment Deposit Time is :<br> {{$begin}} to {{$end}} Current Time is {{$current_time}} </h3>
+                                </div>                        
+
+                        @endif       
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>  
+            </div>
+          </div>
+          <!-- /Row -->
+          
+         
+          
+         
+          
+          
+        
+        </div>
+        <script type="text/javascript">
+
+   function checkamount()
+   {
+    
+    var amount_minimum = <?php echo $data_setting->minimum_deposite; ?>;
+  
+    if(amount_minimum > amount.value)
+    {
+      amount_err.innerHTML = "Amount should greater then "+amount_minimum;
+      document.getElementById('amount').value="";
+      return false;
+    }
+    else 
+    {
+      amount_err.innerHTML = "";
+    }
+
+
+     //Multiple of Condition
+      var multi_amt = <?php echo $data_setting->deposite_multiple_off;?>;
+    
+      if(amount.value % multi_amt != 0)
+       {
+          amount_err.innerHTML = "Amount should be Multiple of "+multi_amt;
+          document.getElementById('amount').value="";
+          return false; 
+       }
+
+   } 
+   
+</script>
+
+<script language='JavaScript' type='text/javascript'>
+
+    function check_value(payment_mode)
+    {
+
+
+
+      image = document.getElementById('imagedest');
+      address = document.getElementById('address');
+      var image_qr = "1627473900.png";
+      var address_det = "bank Details";
+      var amount= $('#amount').val();
+      var mode = payment_mode.value.toUpperCase();
+
+      var from_curr = <?php echo '"'.$data_setting->currency.'"'; ?>;
+      var from_curr = from_curr.toUpperCase();
+      if(payment_mode.value == "btc")
+      {
+
+
+        <?php  $data = DB::table('deposite_option')->where('symbol','=','btc')->first(); ?>
+         image_qr = "<?php echo $data->qr; ?>";
+         address_det = "<?php echo $data->address; ?>";
+         
+         currency_convert(from_curr,mode,amount);
+          
+        
+
+      }
+
+      if(payment_mode.value == "eth")
+      {
+
+        <?php  $data = DB::table('deposite_option')->where('symbol','=','eth')->first(); ?>
+         image_qr = "<?php echo $data->qr; ?>";
+          address_det = "<?php echo $data->address; ?>";
+
+          currency_convert(from_curr,mode,amount);
+
+      }
+
+       if(payment_mode.value == "imps")
+      {
+           <?php  $data = DB::table('deposite_option')->where('symbol','=','imps')->first(); ?>
+         image_qr = "<?php echo $data->qr; ?>";
+          address_det = "<?php echo $data->address; ?>";
+
+          
+
+            document.getElementById('amount_in_coin').value = amount*75;   
+
+
+      }
+
+       if(payment_mode.value == "trx")
+      {
+
+        <?php  $data = DB::table('deposite_option')->where('symbol','=','trx')->first(); ?>
+         image_qr = "<?php echo $data->qr; ?>";
+          address_det = "<?php echo $data->address; ?>";
+
+          currency_convert(from_curr,mode,amount);
+
+
+      }
+
+
+       if(payment_mode.value == "usdt")
+      {
+
+         <?php  $data = DB::table('deposite_option')->where('symbol','=','usdt')->first(); ?>
+         image_qr = "<?php echo $data->qr; ?>";
+          address_det = "<?php echo $data->address; ?>";
+
+          currency_convert(from_curr,mode,amount);
+
+      }
+
+       var image_path = "/public/qrcode/"+image_qr;
+        image.src = image_path;
+        address.innerHTML=address_det;
+
+
+
+
+      
+    }
+
+</script>
+
+
+
+<!-- convert to INR amount -->
+<script>
+  function currency_convert(from,to,amount)
+{
+
+  $.ajax({
+              url: "{{'https://min-api.cryptocompare.com/data/price'}}",
+              type: 'GET',
+              data: {
+                _method:'GET',
+                fsym   :from,
+                tsyms  :to
+               
+               
+               
+              },
+             
+            success: function(response)
+            {
+             
+            
+                
+                document.getElementById('amount_in_coin').value = response[to]*amount;   
+
+                     
+              
+            }
+            });
+
+}
+
+ 
+</script>
+
+       
+       
+            
+ @include('user4.common.footer')
