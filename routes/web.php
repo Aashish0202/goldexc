@@ -224,6 +224,13 @@ Route::post('/payment_withdraw_post', ['as'=>'payment_withdraw_post', 'uses'=>'u
 
 //Routes for Report
 
+Route::get('/getMemberCount/{package}', ['as'=>'getPool', 'uses'=>'user\ReportController@getMemberCount']);
+
+Route::get('/getPoolDetails', ['as'=>'getPool', 'uses'=>'user\ReportController@getPoolDetails']);
+
+Route::get('/getRoiDetails', ['as'=>'getPool', 'uses'=>'user\ReportController@getRoiDetails']);
+
+
 Route::get('/level', ['as'=>'level', 'uses'=>'user\ReportController@level']);
 
 Route::get('/pool', ['as'=>'pool', 'uses'=>'user\ReportController@pool']);

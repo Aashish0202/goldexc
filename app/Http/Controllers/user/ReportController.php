@@ -517,6 +517,55 @@ class ReportController extends Controller
 
     }
   
+    public function getMemberCount($package_amount)
+    {
+         $user = Sentinel::check();
 
+        
+         
+        $autopool_entries =  DB::table('autopool')->where('package_amount','=',$package_amount)->where('user_id','=',$user->email)->get();
+        $autopool_trans  = [];
+        foreach($autopool_entries as $items)
+        {
+          $temp_arr = [];
+          $getPool = DB::table('transaction')->where('reason','=','pool')->where('percentage',$items->id)->get();
+          $data_arr = [];
+          $data_arr['transaction'] = $getPool;
+          $data_arr['count'] = $items->count;
+          $data_arr['upgrade'] = $items->upgrade;
+          $data_arr['autopool_earning'] = $items->count * $items->amount;
+          
+           $temp_arr[$items->amount] = $data_arr;
+
+           array_push($autopool_trans,$temp_arr);
+
+        }
+
+
+         
+
+      return response()->json(['autopool_trans' =>  $autopool_trans]);
+
+    }
+
+    public function getPoolDetails()
+    {
+      $user = Sentinel::check();
+
+      $getPool = DB::table('transaction')->where('reason','=','pool')->where('reciver',$user->email)->get();
+
+      return response()->json(['getPool' => $getPool]);
+
+    }
+
+    public function getRoiDetails()
+    {
+      $user = Sentinel::check();
+
+      $getRoiDetails = DB::table('transaction')->where('reason','=','roi')->where('reciver',$user->email)->get();
+
+      return response()->json(['getRoiDetails' => $getRoiDetails]);
+
+    }
 
 }

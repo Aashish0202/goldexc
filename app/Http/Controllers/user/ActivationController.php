@@ -81,8 +81,8 @@ class ActivationController extends Controller
 
                               //print_r($transaction_check);die();
 
-              if($package < 1){
-                  Session::flash('error','Package Must be greater than 1');      
+              if($package < 34){
+                  Session::flash('error','Package Must be greater than 34');      
                       return redirect()->back();
                   }
                       
@@ -92,22 +92,11 @@ class ActivationController extends Controller
                   }
 
 
-                $utilization = 0;
+               
 
-           if($request->input('reward_wallet') !== null)
-           {
-              if($wallet_balance['reward_wallet'] > ($package*10/100))
-              {
-                $utilization = ($package*10/100);
-              }
-              else
-              {
-                $utilization = $wallet_balance['reward_wallet'];
-              }
-              
-           }
+           
 
-          if(($package-$utilization) > $wallet_balance['activation_wallet'])
+          if(($package) > $wallet_balance['activation_wallet'])
           {
              Session::flash('error', 'Amount is greater than your Activation wallet Amount');      
               return redirect()->back();
@@ -127,31 +116,16 @@ class ActivationController extends Controller
              
               $today = date('Y-m-d');
 
-              if($package >= 1)
-              {
-                $package_id = 1;
-              }
-              if($package >= 11)
-              {
-                $package_id = 2;
-              }
-              if($package >= 51)
-              {
-                $package_id = 3;
-              }
-
+            
 
             $sponsor_count=  DB::table('users')->where('sponcer_id','=',$user->email)->where('is_active','=','active')->count();
-            $package_data = DB::table('package')->where('id','=',$package_id)->first();
+            $package_data = DB::table('package')->where('amount','=',$package)->first();
 
 
                      
           $this->createTransaction($user->email,$user_id,$package,$package,"activate_package",$package_data->id,"","completed",$today,"Package Activation","");
 
-          if($utilization > 0)
-          {
-              $this->createTransaction($user->email,$user_id,$utilization,$package,"reward_utilization",$package_data->id,"","completed",$today,"Reward Utilization","");
-          }
+          
 
           $wallet_data = DB::table('wallet')->where('user_id','=',$user->email)->first();
 
@@ -166,9 +140,9 @@ class ActivationController extends Controller
 
           // function createTransaction($sender_id,$reciever_id,$amount,$package,$reason,$level,$percentage,$approval,$date,$status,$utr)
 
-         
+         $autopool_package = DB::table('autopool_package')->where('package','=',$package)->where('flow','=','1')->first();
 
-      //   $this->autopool_one($user_id,80);
+          $this->autopool_one($user_id,$autopool_package->id);
 
 
          if($package_data->roi_active == "yes")
@@ -178,17 +152,91 @@ class ActivationController extends Controller
              $this->createTransaction("",$user_id,$package,$package,"roi",$package_data->roi_days,$package_data->roi,"completed",$now,"Daily Gold Yeild","");
          }
 
+
+         $daily_roi = $package*($package_data->roi/100);
         
          // level income
 
+         $level_parent = $user_id;
+         
+         for ($i=0; $i < $package_data->level_upto; $i++) { 
 
-         $daily_roi = $package*($package_data->roi/100);
+            $key = $i+1;
+
+          $parent = $this->get_direct_parent_at_position($level_parent,0,$key);
+
+          $parent_status = $this->user_status($parent);
+
+          $level_data = DB::table('level_income')->where('level','=',$key)->first();
+
+          if($key ==  1)
+          {
+             if($parent_status ==  "active")
+          {
+
+            $package_name = $package_data->package_code;
+
+           
+
+            $this->createTransaction($user_id,$parent,$level_data->$package_name,$package,"direct",$key,$level_data->$package_name,"completed",$today,"completed","");
+
+            $wallet_data = DB::table('wallet')
+                        ->where('user_id','=',$parent)
+                        ->first();
+
+            $wallet_update_data = [];
+            $wallet_update_data['direct_income'] = $wallet_data->direct_income + $level_data->$package_name;
+
+            $wallet_update_data['wallet_balance'] = $wallet_data->wallet_balance + $level_data->$package_name;
+
+            $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
+          }
+
+          else
+          {
+            $this->createTransaction($user_id,$parent,$package*($level_data->$package_name),$package,"level",$key,$level_data->$package_name,"failed",$today,"failed","");
+          }
+
+          }
+          
+          else
+          {
+
+            if($parent_status ==  "active")
+          {
+           
+            $this->createTransaction($user_id,$parent,$daily_roi*($level_data->$package_name),$package,"level",$key,$level_data->$package_name,"completed",$today,"completed","");
+
+            $wallet_data = DB::table('wallet')
+                  ->where('user_id','=',$parent)
+                  ->first();
+
+            $wallet_update_data = [];
+            $wallet_update_data['level_income'] = $wallet_data->level_income + $level_data->$package_name;
+
+            $wallet_update_data['wallet_balance'] = $wallet_data->wallet_balance + $level_data->$package_name;
+
+            $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
+          }
+
+          else
+          {
+            $this->createTransaction($user_id,$parent,$daily_roi*($level_data->{$level_data->$package_name}),$package,"level",$key,$level_data->{$level_data->$package_name},"failed",$today,"failed","");
+          }
+
+          }
+
+
+         }
+
+
+       
 
 
 
 
 
-
+         /*
         $level_parent = $user_id;
          
          for ($i=0; $i < $package_data->level_upto; $i++) { 
@@ -293,20 +341,7 @@ class ActivationController extends Controller
 
 
 
-            /*
-
-            $wallet_data = DB::table('wallet')
-                  ->where('user_id','=',$parent)
-                  ->first();
-
-            $wallet_update_data = [];
-            $wallet_update_data['level_income'] = $wallet_data->level_income + $level_data->percentage;
-
-            $wallet_update_data['wallet_balance'] = $wallet_data->wallet_balance + $level_data->percentage;
-
-            $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
-
-            */
+            
           }
 
           else
@@ -319,6 +354,7 @@ class ActivationController extends Controller
 
 
          }
+         */
 
          $data['is_active']  = "active";
 
@@ -327,7 +363,7 @@ class ActivationController extends Controller
                 ->update($data);
 
 
-        // $this->binary_income($user->binary_sponcer,$user->email,$user->my_side,$package);
+        
 
 
      
@@ -448,7 +484,10 @@ class ActivationController extends Controller
 
          $package_data =  DB::table('package')->first();
 
-      //   $this->autopool_one($user_id,80);
+         $autopool_package =  DB::table('autopool_package')->where('package','=',$package)->where('flow','=','1')->first();
+
+
+        
 
 
          if($package_data->roi_active == "yes")
@@ -457,6 +496,7 @@ class ActivationController extends Controller
 
              $this->createTransaction("",$user_id,$package,$package,"roi",$package_data->roi_days,$package_data->roi,"completed",$now,"completed","");
          }
+
 
         
          // level income
@@ -654,15 +694,19 @@ class ActivationController extends Controller
 
 
 
-    public function autopool_one($user_id,$package_amount)
+
+    public function autopool_one($user_id,$package_id)
     {
 
+     $autopool_package = DB::table('autopool_package')->where('id','=',$package_id)->first();
+
       $three_leg_parent = DB::table('autopool')
-         ->where('count','<','2')
-         ->where('amount','=',$package_amount)
+         ->where('count','<',$autopool_package->pool_count)
+         ->where('amount','=',$autopool_package->package_amount)
+         ->where('package_id','=',$package_id)
          ->first();
 
-        $amount_to = $package_amount;
+        $amount_to = $autopool_package->package_amount;
 
         $random_user_id = "SCU".rand( 1000000 , 9999999 );
 
@@ -672,6 +716,8 @@ class ActivationController extends Controller
         $init_three_leg['sponcer'] = $three_leg_parent->user_id;
         $init_three_leg['sponcer_self'] = $three_leg_parent->self_id;
         $init_three_leg['amount'] = $three_leg_parent->amount;
+        $init_three_leg['package_id'] = $package_id;
+        $init_three_leg['package_amount'] = $autopool_package->package;
 
         DB::table('autopool')->insert($init_three_leg);
 
@@ -682,84 +728,55 @@ class ActivationController extends Controller
                ->where('id','=',$three_leg_parent->id)
                ->update($three_leg_update);
 
+
+         $three_leg_parent = DB::table('autopool')
+               ->where('id','=',$three_leg_parent->id)
+               ->first();
+
         $today = date('Y-m-d');
 
 
-        $level_1 = $this->get_direct_parent_at_position_autopool($random_user_id,0,1,'autopool',$package_amount);
        
-        $level_1_user = $this->fetch_user_info("autopool",$level_1);
-        
-        if($level_1_user != null)
+   
+
+        if($three_leg_parent != null)
         {
+        $this->createTransaction($user_id,$three_leg_parent->user_id,$amount_to,$autopool_package->package,"pool",1,$three_leg_parent->id,"pending",$today,$autopool_package->flow,$package_id);
 
-          $this->createTransaction($user_id,$level_1_user->user_id,$amount_to,$package_amount,"pool",1,"","pending",$today,'pending','');
-          $this->autopool_updater($level_1,1,$amount_to,0);
-
-            $wallet_data = DB::table('wallet')->where('user_id','=',$level_1_user->user_id)->first();
-            $wallet_update_data = [];
-            $wallet_update_data['autopool_pending'] = $wallet_data->autopool_pending + $amount_to;
-            $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
-
-        }
-
-
-        $level_2 = $this->get_direct_parent_at_position_autopool($random_user_id,0,2,'autopool',$package_amount);
-        $level_2_user = $this->fetch_user_info("autopool",$level_2);
-
-         if($level_2_user != null)
-        {
-        $this->createTransaction($user_id,$level_2_user->user_id,$amount_to,$package_amount,"pool",2,"","pending",$today,'pending','');
-        $this->autopool_updater($level_2,1,$amount_to,0);
-
-            $wallet_data = DB::table('wallet')->where('user_id','=',$level_2_user->user_id)->first();
-            $wallet_update_data = [];
-            $wallet_update_data['autopool_pending'] = $wallet_data->autopool_pending + $amount_to;
-            $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
-
-        }
-
-        $level_3 = $this->get_direct_parent_at_position_autopool($random_user_id,0,3,'autopool',$package_amount);
-        $level_3_user = $this->fetch_user_info("autopool",$level_3);
-
-        if($level_3_user != null)
-        {
-
-        $this->createTransaction($user_id,$level_3_user->user_id,$amount_to,$package_amount,"pool",3,"","pending",$today,'pending','');
-        $this->autopool_updater($level_3,1,$amount_to,0);
-
-          $wallet_data = DB::table('wallet')->where('user_id','=',$level_3_user->user_id)->first();
-          $wallet_update_data = [];
-            $wallet_update_data['autopool_pending'] = $wallet_data->autopool_pending + $amount_to;
-            $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
-
-          }
-
-        $level_4 = $this->get_direct_parent_at_position_autopool($random_user_id,0,4,'autopool',$package_amount);
-        $level_4_user = $this->fetch_user_info("autopool",$level_4);
-
-        if($level_4_user != null)
-        {
-        $this->createTransaction($user_id,$level_4_user->user_id,$amount_to,$package_amount,"pool",4,"","pending",$today,'pending','');
-        $this->autopool_updater($level_4,1,$amount_to,0);
-
-            $wallet_data = DB::table('wallet')->where('user_id','=',$level_4_user->user_id)->first();
+            $wallet_data = DB::table('wallet')->where('user_id','=',$three_leg_parent->user_id)->first();
             $wallet_update_data = [];
             $wallet_update_data['autopool_pending'] = $wallet_data->autopool_pending + $amount_to;
             $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
 
 
-        $level_4_user = $this->fetch_user_info("autopool",$level_4);
+      
 
-        if($level_4_user->trans_count == 120)
+        if($three_leg_parent->count == $autopool_package->pool_count)
         {
-          $this->autopool_two($level_4_user->$user_id,400);
+         
 
-            $wallet_data = DB::table('wallet')->where('user_id','=',$level_4_user->user_id)->first();
+            $wallet_data = DB::table('wallet')->where('user_id','=',$three_leg_parent->user_id)->first();
             $wallet_update_data = [];
-            $wallet_update_data['autopool_income'] = $wallet_data->autopool_income + 2400;
-            $wallet_update_data['pool_upgrade'] = $wallet_data->autopool_income + 900;
-            $wallet_update_data['wallet_balance'] = $wallet_data->wallet_balance + 1500;
+            $wallet_update_data['autopool_income'] = $wallet_data->autopool_income + $autopool_package->self;
+            $wallet_update_data['pool_upgrade'] = $wallet_data->autopool_income + $autopool_package->upgrade;
+            $wallet_update_data['wallet_balance'] = $wallet_data->wallet_balance + $autopool_package->self;
             $this->wallet_updater($wallet_update_data,$wallet_data->user_id);
+
+            $trasn_updater = [];
+            $trasn_updater['approval'] = "completed";
+            
+           $transup = DB::table('transaction')->where('percentage','=',$three_leg_parent->id)->get();
+
+           foreach ($transup as $key => $value) {
+            DB::table('transaction')->where('id','=',$value->id)->update($trasn_updater);
+            # code...
+           }
+
+
+
+          
+
+           return $this->autopool_one($three_leg_parent->user_id,$autopool_package->next_package);
 
 
           // upgrade deduction
@@ -2032,11 +2049,11 @@ class ActivationController extends Controller
 
 
 
-             public function get_direct_parent_at_position_autopool($user_id,$position,$at_position,$table,$package_amount)
+             public function get_direct_parent_at_position_autopool($user_id,$position,$at_position,$table,$package_id)
           {
             $self = \DB::table($table)
             ->where(['self_id'=>$user_id])
-            ->where('amount','=',$package_amount)
+            ->where('package_id','=',$package_id)
             ->first();
             
             if(empty($self))
@@ -2051,7 +2068,7 @@ class ActivationController extends Controller
                 {
                     return $parent;
                 }
-                return $this->get_direct_parent_at_position_autopool($parent,$position,$at_position,$table,$package_amount); 
+                return $this->get_direct_parent_at_position_autopool($parent,$position,$at_position,$table,$package_id); 
           }
 
            public function fetch_user_info($tablename,$self_id)
