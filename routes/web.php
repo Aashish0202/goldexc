@@ -283,6 +283,12 @@ Route::get('/selfroi_income', ['as'=>'selfroi_income', 'uses'=>'user\ReportContr
 
 Route::get('/autopool_report', ['as'=>'autopool_report', 'uses'=>'user\ReportController@autopool_report']);
 
+//autopool report 1
+
+Route::get('/autopool_report1', ['as'=>'autopool_report1', 'uses'=>'user\ReportController@autopool_report1']);
+
+
+
 Route::get('/tbireport', ['as'=>'tbireport', 'uses'=>'user\ReportController@tbireport']);
 
 Route::get('/rapid_fire', ['as'=>'rapid_fire', 'uses'=>'user\ReportController@rapid_fire']);

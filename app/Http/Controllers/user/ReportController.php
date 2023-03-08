@@ -366,6 +366,23 @@ class ReportController extends Controller
         return view(''.$themecheck1.'/report/autopool_report')->with(compact('themecheck1'));
 
     }
+        //new autopool report1
+        
+  public function autopool_report1()
+  {
+      $user = Sentinel::check();
+
+      $themecheck1 = $this->themecheck();
+
+      //$data = DB::table('income_table')->get();
+
+     
+      return view(''.$themecheck1.'/report/autopool_report1')->with(compact('themecheck1'));
+
+  }
+
+
+
 
     public function team_booster_income(){
 
@@ -376,6 +393,9 @@ class ReportController extends Controller
          return view(''.$themecheck1.'/report/team_booster_income')->with(compact('themecheck1'));
 
     }
+
+    
+
 
     public function wallettoactivation()
     {
